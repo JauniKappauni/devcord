@@ -5,6 +5,8 @@ const pool = require("./db");
 
 app.set("view engine", "ejs");
 
+app.use(express.urlencoded({ extended: true }));
+
 app.get("/", (req, res) => {
   res.render("index");
 });
@@ -12,9 +14,28 @@ app.get("/", (req, res) => {
 app.get("/register", (req, res) => {
   res.render("register");
 });
+
+app.post("/register", (req, res) => {
+  const email = req.body.email;
+  const username = req.body.username;
+  const password = req.body.password;
+  pool.query(
+    "INSERT INTO users (email, username, password) VALUES (?, ?, ?)",
+    [email, username, password],
+    (err, res2) => {
+      if (err) {
+        res.send("❌");
+      } else {
+        res.send("✅");
+      }
+    }
+  );
+});
+
 app.get("/login", (req, res) => {
   res.render("login");
 });
+
 app.get("/dashboard", (req, res) => {
   res.render("dashboard");
 });

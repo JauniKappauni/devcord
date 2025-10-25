@@ -6,6 +6,7 @@ dotenv.config();
 const pool = mysql2.createPool({
   host: process.env.HOST,
   user: process.env.USER,
+  database: process.env.DATABASE
 });
 
 pool.getConnection((err, conn) => {

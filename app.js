@@ -1,5 +1,6 @@
 const express = require("express");
 const session = require("express-session");
+const sharedSession = require("express-socket.io-session");
 const env = require("dotenv");
 require("dotenv").config();
 const mysql = require("mysql2");
@@ -53,16 +54,21 @@ connectToDatabase();
 
 app.set("view engine", "ejs");
 
-app.use(
-  session({
-    secret: process.env.SESSION_SECRET,
-    resave: false,
-    saveUninitialized: true,
-  })
-);
+const sessionMiddleware = session({
+  secret: process.env.SESSION_SECRET,
+  resave: false,
+  saveUninitialized: true,
+});
+app.use(sessionMiddleware);
+
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static("public"));
 app.use(flash());
+io.use(
+  sharedSession(sessionMiddleware, {
+    autoSave: true,
+  })
+);
 
 app.get("/", (req, res) => {
   const user = req.session.user || null;
@@ -809,12 +815,13 @@ app.get("/chat", (req, res) => {
 });
 
 io.on("connection", (socket) => {
-  io.emit("onCM", `connected`);
+  const username = socket.handshake.session.user?.username;
+  io.emit("onCM", `${username}: connected`);
   socket.on("onCM", (message) => {
-    io.emit("onCM", `${message}`);
+    io.emit("onCM", `${username}: ${message}`);
   });
   socket.on("disconnect", () => {
-    io.emit("onCM", `disconnected`);
+    io.emit("onCM", `${username}: disconnected`);
   });
 });
 

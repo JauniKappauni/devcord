@@ -1,0 +1,55 @@
+<%- include('../partials/header.ejs') %>
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title><%=title%></title>
+    <script src="/socket.io/socket.io.js"></script>
+  </head>
+  <body class="bg-gray-900 text-white min-h-screen flex flex-col">
+    <main class="flex-grow">
+    <% if (successMessages.length > 0 || errorMessages.length > 0) { %>
+      <div
+        class="hover:bg-gray-700 transition-colors duration-200 fixed bottom-4 right-4 z-50 bg-gray-800 text-white p-4 rounded-xl shadow-xl border border-gray-700"
+      >
+        <% successMessages.forEach(msg => { %>
+        <p class="text-green-600"><%= msg %></p>
+        <% }) %> <% errorMessages.forEach(msg => { %>
+        <p class="text-red-600"><%= msg %></p>
+        <% }) %>
+      </div>
+      <% } %>
+      <div style="margin: 50px;">
+        <form id="messageForm">
+      <input type="text" id="messageInput" placeholder="Message" style="color: black; border-radius: 90px; height: 50px; padding: 20px;" />
+      <input type="submit" value="Send" style="background-color: black;" />
+    </form>
+    <pre id="chat" style="background-color: black;"></pre>
+      </div>
+    
+    <script>
+      const socket = io();
+      const messageForm = document.getElementById("messageForm");
+      const messageInput = document.getElementById("messageInput");
+      const chat = document.getElementById("chat");
+      socket.on("onCM", function (message) {
+        update(message);
+      });
+
+      messageForm.addEventListener("submit", function (event) {
+        event.preventDefault();
+        const message = messageInput.value;
+        if (message.length == 0) return;
+        socket.emit("onCM", message);
+        messageInput.value = "";
+      });
+
+      function update(message) {
+        chat.innerHTML += message + "\n";
+      }
+    </script>
+  </body>
+  </main>
+</html>
+<%- include('../partials/footer.ejs') %>

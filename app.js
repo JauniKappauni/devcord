@@ -9,7 +9,11 @@ const flash = require("express-flash");
 const { userInfo } = require("os");
 const speakeasy = require("speakeasy");
 const qrcode = require("qrcode");
+const socketIo = require("socket.io");
+const http = require("http");
 const app = express();
+const server = http.createServer(app);
+const io = socketIo(server);
 const port = 3000;
 
 const dbhost = process.env.DB_HOST;
@@ -38,9 +42,9 @@ function connectToDatabase() {
   });
   conn.getConnection((err, res) => {
     if (err) {
-      console.error("❌DB CONN", err);
+      console.error("❌DB CONN");
     } else {
-      console.log("✅DB CONN", res);
+      console.log("✅DB CONN");
       res.release();
     }
   });
@@ -792,6 +796,28 @@ app.get("/activity", (req, res) => {
   );
 });
 
-app.listen(port, () => {
+app.get("/chat", (req, res) => {
+  const user = req.session.user || null;
+  const successMessages = req.flash("success");
+  const errorMessages = req.flash("error");
+  res.render("chat", {
+    title: "Chat",
+    user: user,
+    successMessages: successMessages,
+    errorMessages: errorMessages,
+  });
+});
+
+io.on("connection", (socket) => {
+  io.emit("onCM", `connected`);
+  socket.on("onCM", (message) => {
+    io.emit("onCM", `${message}`);
+  });
+  socket.on("disconnect", () => {
+    io.emit("onCM", `disconnected`);
+  });
+});
+
+server.listen(port, () => {
   console.log(`Server is running at http://localhost:${port}`);
 });

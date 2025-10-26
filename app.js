@@ -92,36 +92,13 @@ app.get("/dashboard", (req, res) => {
   }
   const successMessages = req.flash("success");
   const errorMessages = req.flash("error");
-  conn.query(
-    "SELECT COUNT(*) AS tickets FROM tickets WHERE user_id = ?",
-    [req.session.user.id],
-    (err, results1) => {
-      const tickets = results1[0].tickets;
-      conn.query(
-        "SELECT COUNT(*) AS openTickets FROM tickets WHERE user_id = ? && status = 1",
-        [req.session.user.id],
-        (err, results2) => {
-          const openTickets = results2[0].openTickets;
-          conn.query(
-            "SELECT COUNT(*) AS closedTickets FROM tickets WHERE user_id = ? && status = 0",
-            [req.session.user.id],
-            (err, results3) => {
-              const closedTickets = results3[0].closedTickets;
-              res.render("dashboard", {
-                title: "Dashboard",
-                user: req.session.user,
-                tickets: tickets,
-                openTickets: openTickets,
-                closedTickets: closedTickets,
-                successMessages: successMessages,
-                errorMessages: errorMessages,
-              });
-            }
-          );
-        }
-      );
-    }
-  );
+
+  res.render("dashboard", {
+    title: "Dashboard",
+    user: req.session.user,
+    successMessages: successMessages,
+    errorMessages: errorMessages,
+  });
 });
 
 app.post("/register", (req, res) => {
@@ -505,34 +482,13 @@ app.get("/admin-dashboard", (req, res) => {
     return res.redirect("/");
   }
   conn.query("SELECT * FROM users", (err, results1) => {
-    conn.query("SELECT * FROM tickets", (err, results2) => {
-      conn.query("SELECT COUNT(*) AS tickets FROM tickets", (err, results3) => {
-        const tickets = results3[0].tickets;
-        conn.query(
-          "SELECT COUNT(*) AS openTickets FROM tickets WHERE status = 1",
-          (err, results4) => {
-            const openTickets = results4[0].openTickets;
-            conn.query(
-              "SELECT COUNT(*) AS closedTickets FROM tickets WHERE status = 0",
-              (err, results5) => {
-                const closedTickets = results5[0].closedTickets;
-                conn.query("SELECT * FROM audit_logs", (err, results6) => {
-                  res.render("admin-dashboard", {
-                    title: "Admin-Dashboard",
-                    user: req.session.user,
-                    users: results1,
-                    tickets: results2,
-                    result: "",
-                    allTickets: tickets,
-                    openTickets: openTickets,
-                    closedTickets: closedTickets,
-                    audit_logs: results6,
-                  });
-                });
-              }
-            );
-          }
-        );
+    conn.query("SELECT * FROM audit_logs", (err, results6) => {
+      res.render("admin-dashboard", {
+        title: "Admin-Dashboard",
+        user: req.session.user,
+        users: results1,
+        result: "",
+        audit_logs: results6,
       });
     });
   });
@@ -710,134 +666,6 @@ app.get("/account", (req, res) => {
   });
 });
 
-app.get("/tickets", (req, res) => {
-  if (!req.session.user) {
-    return res.redirect("/");
-  }
-  const userId = req.session.user.id;
-  conn.query(
-    "SELECT * FROM tickets WHERE user_id = ?",
-    [userId],
-    (err, result) => {
-      res.render("tickets", {
-        title: "Tickets",
-        user: req.session.user,
-        tickets: result,
-      });
-    }
-  );
-});
-
-app.get("/tickets/new", (req, res) => {
-  if (!req.session.user) {
-    return res.redirect("/");
-  }
-  res.render("create-ticket", {
-    title: "Create Ticket",
-    user: req.session.user,
-  });
-});
-
-app.get("/tickets/:id", (req, res) => {
-  if (!req.session.user) {
-    return res.redirect("/");
-  }
-
-  ticketId = req.params.id;
-  conn.query(
-    "SELECT * FROM tickets WHERE id = ?",
-    [ticketId],
-    (err, results1) => {
-      const ticket = results1[0];
-      if (
-        req.session.user.role !== "admin" &&
-        ticket.user_id !== req.session.user.id
-      ) {
-        return res.redirect("/");
-      }
-      conn.query(
-        `SELECT ticket_messages.*, users.username, users.role
-        FROM ticket_messages
-        JOIN users ON user_id = users.id
-        WHERE ticket_id = ?
-        ORDER BY created_at DESC`,
-        [ticketId],
-        (err, results2) => {
-          res.render("ticket-details", {
-            ticket: results1[0],
-            messages: results2,
-            user: req.session.user,
-            title: "Ticket Details",
-          });
-        }
-      );
-    }
-  );
-});
-
-app.post("/tickets", (req, res) => {
-  if (!req.session.user) {
-    return res.redirect("/");
-  }
-  const userId = req.session.user.id;
-  const category = req.body.category;
-  const message = req.body.firstMessage;
-  const status = true;
-  const created_at = new Date();
-  if (category) {
-    conn.query(
-      "INSERT INTO tickets (user_id, category, status, created_at) VALUES (?,?,?,?)",
-      [userId, category, status, created_at],
-      (err, result) => {
-        const ticketId = result.insertId;
-        conn.query(
-          "INSERT INTO ticket_messages (ticket_id, user_id, message, created_at) VALUES (?,?,?,?)",
-          [ticketId, userId, message, created_at],
-          (err, result) => {
-            logAuditEvent(
-              userId,
-              "ticket_created",
-              {
-                ticket: {
-                  id: ticketId,
-                  category: category,
-                  firstMessage: message,
-                },
-              },
-              req.ip
-            );
-            res.redirect(`/tickets/${ticketId}`);
-          }
-        );
-      }
-    );
-  }
-});
-
-app.post("/tickets/:id/messages", (req, res) => {
-  if (!req.session.user) {
-    return res.redirect("/");
-  }
-  const ticketId = req.params.id;
-  const userId = req.session.user.id;
-  const message = req.body.message;
-  const created_at = new Date();
-
-  conn.query(
-    "INSERT INTO ticket_messages (ticket_id, user_id, message, created_at) VALUES (?,?,?,?)",
-    [ticketId, userId, message, created_at],
-    (err, result) => {
-      conn.query(
-        "UPDATE tickets SET status = true WHERE id = ? AND status = false",
-        [ticketId],
-        (err2) => {
-          res.redirect(`/tickets/${ticketId}`);
-        }
-      );
-    }
-  );
-});
-
 app.get("/2fa/setup", (req, res) => {
   if (!req.session.user) {
     return res.redirect("/");
@@ -915,12 +743,6 @@ app.post("/2fa/verify", (req, res) => {
       return res.redirect("/dashboard");
     }
   );
-});
-
-app.post("/tickets/:id/close", (req, res) => {
-  const ticketId = req.params.id;
-  conn.query("UPDATE tickets SET status = false WHERE id = ?", [ticketId]);
-  res.redirect("/tickets");
 });
 
 function logAuditEvent(userId, action, details, ip) {

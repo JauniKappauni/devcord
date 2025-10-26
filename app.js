@@ -36,6 +36,26 @@ app.get("/login", (req, res) => {
   res.render("login");
 });
 
+app.post("/login", (req, res) => {
+  const identifier = req.body.identifier;
+  const password = req.body.password;
+  pool.query(
+    "SELECT email, username, password FROM users WHERE email = ? OR username = ?",
+    [identifier, identifier],
+    (err, res2) => {
+      if (err) {
+        res.send("❌");
+      } else {
+        if (res2[0].password == password) {
+          res.send("✅");
+        } else {
+          res.send("❌");
+        }
+      }
+    }
+  );
+});
+
 app.get("/dashboard", (req, res) => {
   res.render("dashboard");
 });

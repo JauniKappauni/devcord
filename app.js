@@ -19,6 +19,7 @@ const dbpassword = process.env.DB_PASSWORD;
 const dbname = process.env.DB_NAME;
 
 const mailhost = process.env.MAIL_HOST;
+const mailport = process.env.MAIL_PORT;
 const mailuser = process.env.MAIL_USER;
 const mailpassword = process.env.MAIL_PASSWORD;
 
@@ -146,8 +147,8 @@ app.post("/register", (req, res) => {
         );
         const transporter = nodemailer.createTransport({
           host: `${mailhost}`,
-          port: 465,
-          secure: true,
+          port: mailport,
+          secure: false,
           auth: {
             user: `${mailuser}`,
             pass: `${mailpassword}`,
@@ -402,8 +403,8 @@ app.post("/forgot-password", (req, res) => {
               );
               const transporter = nodemailer.createTransport({
                 host: `${mailhost}`,
-                port: 465,
-                secure: true,
+                port: mailport,
+                secure: false,
                 auth: {
                   user: `${mailuser}`,
                   pass: `${mailpassword}`,
@@ -665,8 +666,8 @@ app.post("/change-email", (req, res) => {
       );
       const transporter = nodemailer.createTransport({
         host: `${mailhost}`,
-        port: 465,
-        secure: true,
+        port: mailport,
+        secure: false,
         auth: {
           user: `${mailuser}`,
           pass: `${mailpassword}`,

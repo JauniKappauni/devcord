@@ -17,9 +17,9 @@ MAIL_ORIGIN_ADDRESS=
 
 Query a `mysql or mariadb` database
 ```
-CREATE DATABASE IF NOT EXISTS auth_system;
+CREATE DATABASE IF NOT EXISTS devcord;
 
-USE auth_system;
+USE devcord;
 
 CREATE TABLE users (
     id INT AUTO_INCREMENT PRIMARY KEY,

@@ -29,6 +29,7 @@
     "speakeasy": "^2.0.0"
   },
   "devDependencies": {
-    "maildev": "^2.2.1"
+    "maildev": "^2.2.1",
+    "nodemon": "^3.1.10"
   }
 }
